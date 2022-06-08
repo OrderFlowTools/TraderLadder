@@ -164,7 +164,7 @@ namespace Gemify.OrderFlow
             ind.Print(s);
         }
 
-        internal void SetBidLadder(List<LadderRow> newBidLadder)
+        internal void SetBidLadder(List<NinjaTrader.Gui.SuperDom.LadderRow> newBidLadder)
         {
             try
             {
@@ -172,7 +172,7 @@ namespace Gemify.OrderFlow
                 CurrBid.Clear();
                 if (newBidLadder != null)
                 {
-                    foreach (LadderRow row in newBidLadder)
+                    foreach (NinjaTrader.Gui.SuperDom.LadderRow row in newBidLadder)
                     {
                         BidAsk entry = new BidAsk(row.Volume, row.Time);
                         if (CurrBid != null) CurrBid.TryAdd(row.Price, entry);                        
@@ -186,7 +186,7 @@ namespace Gemify.OrderFlow
             }
         }
 
-        internal void SetAskLadder(List<LadderRow> newAskLadder)
+        internal void SetAskLadder(List<NinjaTrader.Gui.SuperDom.LadderRow> newAskLadder)
         {
             try
             {
@@ -194,7 +194,7 @@ namespace Gemify.OrderFlow
                 CurrAsk.Clear();
                 if (newAskLadder != null)
                 {
-                    foreach (LadderRow row in newAskLadder)
+                    foreach (NinjaTrader.Gui.SuperDom.LadderRow row in newAskLadder)
                     {
                         BidAsk entry = new BidAsk(row.Volume, row.Time);
                         if (CurrAsk != null) CurrAsk.TryAdd(row.Price, entry);                        
