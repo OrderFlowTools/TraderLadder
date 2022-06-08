@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.3.6
+- Ability to highlight large resting Ask/Bid orders based on configurable size threshold.
+- BUG FIX: Fixed issue that causes installs to fail (LadderRow name conflict).
+
 ## v0.3.5
 - Added totals for the sliding window (total buys/sells, largest buys/sells, last buy/sell) and a summary row at the bottom of ladder.
 - Turned off last trades on UI by default. Turned on Bid/Ask ladder by default.
