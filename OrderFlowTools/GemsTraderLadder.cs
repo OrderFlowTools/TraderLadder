@@ -93,7 +93,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
         #region Variable Decls
         // VERSION
-        private readonly string TraderLadderVersion = "v0.3.5";
+        private readonly string TraderLadderVersion = "v0.3.6";
 
         // UI variables
         private bool clearLoadingSent;
@@ -138,6 +138,8 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         private long sellsInSlidingWindow = 0;
         private bool SlidingWindowLastOnly;
         private bool SlidingWindowLastMaxOnly;
+
+        private double LargeBidAskSizePercThreshold;
         #endregion
 
         protected override void OnStateChange()
@@ -186,6 +188,12 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
                 BidSizeColor = Brushes.MediumBlue;
                 AskSizeColor = Brushes.Firebrick;
+
+                LargeBidAskSizeHighlightFilter = 200;
+                LargeBidAskSizePercThreshold = 0.80; // Highlight bid/ask if size exceeds 70% of total bid/ask sizes
+
+                LargeBidSizeHighlightColor = Brushes.DeepSkyBlue;
+                LargeAskSizeHighlightColor = Brushes.Red;
 
                 HighlightColor = DefaultTextColor;
                 DisplayVolume = true;
@@ -494,9 +502,9 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             }
         }
 
-        private List<LadderRow> GetBidLadderCopy()
+        private List<NinjaTrader.Gui.SuperDom.LadderRow> GetBidLadderCopy()
         {
-            List<LadderRow> ladder = null;
+            List<NinjaTrader.Gui.SuperDom.LadderRow> ladder = null;
             try
             {
                 if (SuperDom.MarketDepth.Bids.Count > 0)
@@ -523,9 +531,9 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             return ladder;
         }
 
-        private List<LadderRow> GetAskLadderCopy()
+        private List<NinjaTrader.Gui.SuperDom.LadderRow> GetAskLadderCopy()
         {
-            List<LadderRow> ladder = null;
+            List<NinjaTrader.Gui.SuperDom.LadderRow> ladder = null;
             try
             {
                 if (SuperDom.MarketDepth.Asks.Count > 0)
@@ -767,13 +775,20 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                         BidAskPerc bidAskPerc = orderFlow.GetAskPerc(row.Price);
                         double perc = bidAskPerc == null ? 0 : bidAskPerc.Perc;
 
+                        Pen pen = askSizePen;
+
+                        if (orderFlow.GetAsk(row.Price) > LargeBidAskSizeHighlightFilter && perc > LargeBidAskSizePercThreshold)
+                        {
+                            pen = new Pen(LargeAskSizeHighlightColor, 2);
+                        }
+
                         double totalWidth = cellWidth * perc;
-                        double paintWidth = totalWidth == cellWidth ? totalWidth - askSizePen.Thickness * 1.5 : totalWidth - halfPenWidth;
+                        double paintWidth = totalWidth == cellWidth ? totalWidth - pen.Thickness * 1.5 : totalWidth - halfPenWidth;
 
                         if (paintWidth >= 0)
                         {
                             double xc = x + (cellWidth - paintWidth);
-                            dc.DrawRectangle(null, askSizePen, new Rect(xc, verticalOffset + halfPenWidth, paintWidth, rect.Height - askSizePen.Thickness));
+                            dc.DrawRectangle(null, pen, new Rect(xc, verticalOffset + halfPenWidth, paintWidth, rect.Height - pen.Thickness));
                         }
 
                     }
@@ -783,13 +798,20 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                         BidAskPerc bidAskPerc = orderFlow.GetBidPerc(row.Price);
                         double perc = bidAskPerc == null ? 0 : bidAskPerc.Perc;
 
+                        Pen pen = bidSizePen;
+
+                        if (orderFlow.GetBid(row.Price) > LargeBidAskSizeHighlightFilter && perc > LargeBidAskSizePercThreshold)
+                        {
+                            pen = new Pen(LargeBidSizeHighlightColor, 2);
+                        }
+
                         double totalWidth = cellWidth * perc;
-                        double paintWidth = totalWidth == cellWidth ? totalWidth - bidSizePen.Thickness * 1.5 : totalWidth - halfPenWidth;
+                        double paintWidth = totalWidth == cellWidth ? totalWidth - pen.Thickness * 1.5 : totalWidth - halfPenWidth;
 
                         if (paintWidth >= 0)
                         {
                             double xc = x + (cellWidth - paintWidth);
-                            dc.DrawRectangle(null, bidSizePen, new Rect(xc, verticalOffset + halfPenWidth, paintWidth, rect.Height - bidSizePen.Thickness));
+                            dc.DrawRectangle(null, pen, new Rect(xc, verticalOffset + halfPenWidth, paintWidth, rect.Height - pen.Thickness));
                         }
                     }
                     // Draw Buy/Sell columns
@@ -1639,6 +1661,32 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             set { HighlightColor = NinjaTrader.Gui.Serialize.StringToBrush(value); }
         }
 
+        [XmlIgnore]
+        [NinjaScriptProperty]
+        [Display(Name = "High Bid Size Marker Color", Description = "High Bid Size Marker.", Order = 23, GroupName = "Visual")]
+        public Brush LargeBidSizeHighlightColor
+        { get; set; }
+
+        [Browsable(false)]
+        public string HighBidSizeMarkerColorSerialize
+        {
+            get { return NinjaTrader.Gui.Serialize.BrushToString(LargeBidSizeHighlightColor); }
+            set { LargeBidSizeHighlightColor = NinjaTrader.Gui.Serialize.StringToBrush(value); }
+        }
+
+        [XmlIgnore]
+        [NinjaScriptProperty]
+        [Display(Name = "High Ask Size Marker Color", Description = "High Ask Size Marker.", Order = 24, GroupName = "Visual")]
+        public Brush LargeAskSizeHighlightColor
+        { get; set; }
+
+        [Browsable(false)]
+        public string HighAskSizeMarkerColorSerialize
+        {
+            get { return NinjaTrader.Gui.Serialize.BrushToString(LargeAskSizeHighlightColor); }
+            set { LargeAskSizeHighlightColor = NinjaTrader.Gui.Serialize.StringToBrush(value); }
+        }
+
 
         // =========== P/L Columns
 
@@ -1690,10 +1738,10 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         public bool DisplayBidAskChange
         { get; set; }
 
-        // [NinjaScriptProperty]
-        // [Display(Name = "Bid/Ask Changes in Sliding Window", Description = "Display the changes in bid/ask in Sliding Window", Order = 4, GroupName = "Bid / Ask Columns")]
-        // public bool DisplayBidAskCumulativeChange
-        // { get; set; }    
+        [NinjaScriptProperty]
+        [Display(Name = "Large Bid/Ask Highlight Filter", Description = "Filter to use when highlighting large bid/ask sizes", Order = 5, GroupName = "Bid / Ask Columns")]
+        public int LargeBidAskSizeHighlightFilter
+        { get; set; }
 
         // =========== OrderFlow Parameters
 
