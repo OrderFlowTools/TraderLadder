@@ -1,5 +1,5 @@
 # TraderLadder
-Current version: 0.3.6 ([release notes](https://github.com/OrderFlowTools/TraderLadder/blob/main/RELEASE_NOTES.md))
+Current version: 0.3.7 ([release notes](https://github.com/OrderFlowTools/TraderLadder/blob/main/RELEASE_NOTES.md))
 
 Free SuperDOM Ladder for Order Flow traders on Ninjatrader.
 
@@ -14,6 +14,7 @@ TraderLadder is a free order flow ladder for Ninjatrader v8. The SuperDOM column
 - Large resting Bid/Ask orders (highlighted)
 - Volume histogram
 - If in a position, Current P/L + Session P/L + Account cash value
+- Notes from an external URL
 
 ## Disclaimer
 This software is provided for free, including the source code for it. At some point, Ninjatrader will (fingers-crossed) provide an OrderFlow DOM of their own. Until then, hopefully this can help fill in the gap - in the free software domain :)
