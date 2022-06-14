@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.3.7
+- Added a Notes column, fed by an external URL (CSV file over http(s))
+
 ## v0.3.6
 - Ability to highlight large resting Ask/Bid orders based on configurable size threshold.
 - BUG FIX: Fixed issue that causes installs to fail (LadderRow name conflict).
