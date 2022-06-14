@@ -229,12 +229,12 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             {
                 #region Add Requested Columns
                 // Add requested columns
+                if (DisplayVolume)
+                    columns.Add(new ColumnDefinition(ColumnType.VOLUME, ColumnSize.LARGE, DefaultBackgroundColor, GenerateVolumeText));
                 if (DisplayNotes)
                     columns.Add(new ColumnDefinition(ColumnType.NOTES, ColumnSize.XLARGE, DefaultBackgroundColor, GenerateNotesText));
                 if (DisplayPrice)
                     columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.MEDIUM, DefaultBackgroundColor, GetPrice));
-                if (DisplayVolume)
-                    columns.Add(new ColumnDefinition(ColumnType.VOLUME, ColumnSize.LARGE, DefaultBackgroundColor, GenerateVolumeText));
                 if (DisplayPL)
                     columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.MEDIUM, DefaultBackgroundColor, CalculatePL));
                 if (DisplaySessionBuysSells)
@@ -867,18 +867,18 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                             if (row.Price == buyTotalsPrice || row.Price == SuperDom.LowerPrice)
                             {
 
-                                FormattedText text = FormatText(buyTotal.ToString(), renderWidth, BuyTextColor, TextAlignment.Right);
+                                FormattedText text = FormatText(buyTotal.ToString(), cellWidth - 2, BuyTextColor, TextAlignment.Right);
 
-                                dc.DrawText(text, new Point(rect.Right - 5, verticalOffset + (SuperDom.ActualRowHeight - text.Height) / 2));
+                                dc.DrawText(text, new Point(rect.Left + 5, verticalOffset + (SuperDom.ActualRowHeight - text.Height) / 2));
                                 if (row.Price != SuperDom.LowerPrice)
                                 {
-                                    dc.DrawRectangle(null, highlightPen, new Rect(x - 1, verticalOffset + halfPenWidth - 1, cellWidth, rect.Height - highlightPen.Thickness));
+                                    dc.DrawRectangle(null, highlightPen, new Rect(x + 2, verticalOffset + halfPenWidth - 1, cellWidth - 3, rect.Height - highlightPen.Thickness));
                                 }
                                 else 
                                 {
                                     if (buyTotal > sellTotal)
                                     {
-                                        dc.DrawRectangle(null, buyHighlightPen, new Rect(x - 1, verticalOffset + halfPenWidth - 1, cellWidth, rect.Height - buyHighlightPen.Thickness));
+                                        dc.DrawRectangle(null, buyHighlightPen, new Rect(x + 2, verticalOffset + halfPenWidth - 1, cellWidth - 3, rect.Height - buyHighlightPen.Thickness));
                                     }
                                 }
                             }
@@ -891,18 +891,18 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                             if (row.Price == sellTotalsPrice || row.Price == SuperDom.LowerPrice)
                             {
 
-                                FormattedText text = FormatText(sellTotal.ToString(), renderWidth, SellTextColor, TextAlignment.Right);
+                                FormattedText text = FormatText(sellTotal.ToString(), cellWidth - 2, SellTextColor, TextAlignment.Right);
 
-                                dc.DrawText(text, new Point(rect.Right - 5, verticalOffset + (SuperDom.ActualRowHeight - text.Height) / 2));
+                                dc.DrawText(text, new Point(rect.Left + 5, verticalOffset + (SuperDom.ActualRowHeight - text.Height) / 2));
                                 if (row.Price != SuperDom.LowerPrice)
                                 {
-                                    dc.DrawRectangle(null, highlightPen, new Rect(x - 1, verticalOffset + halfPenWidth - 1, cellWidth, rect.Height - highlightPen.Thickness));
+                                    dc.DrawRectangle(null, highlightPen, new Rect(x + 2, verticalOffset + halfPenWidth - 1, cellWidth - 3, rect.Height - highlightPen.Thickness));
                                 }
                                 else
                                 {
                                     if (sellTotal > buyTotal)
                                     {
-                                        dc.DrawRectangle(null, sellHighlightPen, new Rect(x - 1, verticalOffset + halfPenWidth - 1, cellWidth, rect.Height - sellHighlightPen.Thickness));
+                                        dc.DrawRectangle(null, sellHighlightPen, new Rect(x + 2, verticalOffset + halfPenWidth - 1, cellWidth - 3, rect.Height - sellHighlightPen.Thickness));
                                     }
                                 }
 
@@ -926,7 +926,9 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                     else if (colDef.Text != null)
                     {
                         // Write the column text
-                        dc.DrawText(colDef.Text, new Point(colDef.Text.TextAlignment == TextAlignment.Left ? rect.Left + 5 : rect.Right - 5, verticalOffset + (SuperDom.ActualRowHeight - colDef.Text.Height) / 2));
+                        double xp = rect.Left + 5;
+                        double yp = verticalOffset + (SuperDom.ActualRowHeight - colDef.Text.Height) / 2;
+                        dc.DrawText(colDef.Text, new Point(xp, yp));
                     }
                 }
 
@@ -939,7 +941,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         #region Text utils
         private FormattedText FormatText(string text, double renderWidth, Brush color, TextAlignment alignment)
         {
-            return new FormattedText(text.ToString(culture), culture, FlowDirection.LeftToRight, typeFace, SuperDom.Font.Size, color, pixelsPerDip) { MaxLineCount = 1, Trimming = TextTrimming.CharacterEllipsis, TextAlignment = alignment };
+            return new FormattedText(text.ToString(culture), culture, FlowDirection.LeftToRight, typeFace, SuperDom.Font.Size, color, pixelsPerDip) { MaxLineCount = 1, MaxTextWidth = renderWidth - 10, Trimming = TextTrimming.CharacterEllipsis, TextAlignment= alignment };
         }
 
         private void Print(string s)
@@ -1005,7 +1007,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 }
             }
 
-            return FormatText(string.Format("{0}", text), renderWidth, color, TextAlignment.Right);
+            return FormatText(string.Format("{0}", text), renderWidth, color, TextAlignment.Center);
         }
 
         private FormattedText GenerateSessionBuysText(double renderWidth, double buyPrice)
@@ -1046,7 +1048,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
             if (totalSells != 0)
             {
-                return FormatText(totalSells.ToString(), renderWidth, brush, TextAlignment.Left);
+                return FormatText(totalSells.ToString(), renderWidth, brush, TextAlignment.Right);
             }
 
             return null;
@@ -1256,7 +1258,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             string text = null;
             if (notes != null && notes.TryGetValue(price, out text))
             {
-                return FormatText(Truncate(text, 15), renderWidth, NotesColor, TextAlignment.Right);
+                return FormatText(text, renderWidth, NotesColor, TextAlignment.Right);
             }
             return null;
         }
