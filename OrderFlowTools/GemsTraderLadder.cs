@@ -52,6 +52,8 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
         enum ColumnType
         {
+            [Description("Notes")]
+            NOTES,
             [Description("Volume")]
             VOLUME,
             [Description("Acc Val")]
@@ -93,7 +95,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
         #region Variable Decls
         // VERSION
-        private readonly string TraderLadderVersion = "v0.3.6";
+        private readonly string TraderLadderVersion = "v0.3.7";
 
         // UI variables
         private bool clearLoadingSent;
@@ -140,6 +142,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         private bool SlidingWindowLastMaxOnly;
 
         private double LargeBidAskSizePercThreshold;
+        private ConcurrentDictionary<double, string> notes;
         #endregion
 
         protected override void OnStateChange()
@@ -196,6 +199,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 LargeAskSizeHighlightColor = Brushes.Red;
 
                 HighlightColor = DefaultTextColor;
+                DisplayNotes = true;
                 DisplayVolume = true;
                 DisplayVolumeText = true;
                 DisplayPrice = true;
@@ -210,6 +214,10 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 DisplaySessionBuysSells = true;
                 DisplayOrderFlowStrengthBar = false;
                 DisplaySlidingWindowTotals = true;
+
+                NotesURL = string.Empty;
+                NotesColor = Brushes.RoyalBlue;
+
                 // This can be toggled - ie, display last size at price instead of cumulative buy/sell.
                 SlidingWindowLastOnly = false;
                 SlidingWindowLastMaxOnly = false;
@@ -221,12 +229,14 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             {
                 #region Add Requested Columns
                 // Add requested columns
+                if (DisplayNotes)
+                    columns.Add(new ColumnDefinition(ColumnType.NOTES, ColumnSize.XLARGE, DefaultBackgroundColor, GenerateNotesText));
+                if (DisplayPrice)
+                    columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.MEDIUM, DefaultBackgroundColor, GetPrice));
                 if (DisplayVolume)
                     columns.Add(new ColumnDefinition(ColumnType.VOLUME, ColumnSize.LARGE, DefaultBackgroundColor, GenerateVolumeText));
                 if (DisplayPL)
                     columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.MEDIUM, DefaultBackgroundColor, CalculatePL));
-                if (DisplayPrice)
-                    columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.MEDIUM, DefaultBackgroundColor, GetPrice));
                 if (DisplaySessionBuysSells)
                     columns.Add(new ColumnDefinition(ColumnType.TOTAL_SELLS, ColumnSize.MEDIUM, DefaultBackgroundColor, GenerateSessionSellsText));
                 if (DisplayBidAskChange)
@@ -391,6 +401,13 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
                         }
                     });
+
+                    if (DisplayNotes && !string.IsNullOrWhiteSpace(NotesURL))
+                    {
+                        // Read notes for this instrument
+                        LadderNotesReader notesReader = new LadderNotesReader(SuperDom.Instrument.MasterInstrument.Name, SuperDom.Instrument.MasterInstrument.TickSize);
+                        notes = notesReader.ReadCSVNotes(NotesURL);
+                    }
 
                     // Repaint the column on the SuperDOM
                     OnPropertyChanged();
@@ -892,6 +909,14 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                             }
                         }
                     }
+                    else if (DisplayPrice && DisplayNotes && colDef.ColumnType == ColumnType.PRICE)
+                    {
+                        string notesText = null;
+                        if (notes != null && notes.TryGetValue(row.Price, out notesText))
+                        {
+                            colDef.Text.SetForegroundBrush(NotesColor);
+                        }
+                    }
 
                     if (row.Price == SuperDom.LowerPrice)
                     {
@@ -921,6 +946,12 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         {
             ind.Print(s);
         }
+
+        public static string Truncate(string value, int maxChars)
+        {
+            return value.Length <= maxChars ? value : value.Substring(0, maxChars) + "...";
+        }
+
         #endregion        
 
         #region Column Text Calculation
@@ -1220,6 +1251,16 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             return 0;
         }
 
+        private FormattedText GenerateNotesText(double renderWidth, double price)
+        {
+            string text = null;
+            if (notes != null && notes.TryGetValue(price, out text))
+            {
+                return FormatText(Truncate(text, 15), renderWidth, NotesColor, TextAlignment.Right);
+            }
+            return null;
+        }
+
         private FormattedText GetPrice(double renderWidth, double price)
         {
             return FormatText(SuperDom.Instrument.MasterInstrument.FormatPrice(price), renderWidth, Brushes.Gray, TextAlignment.Right);
@@ -1312,6 +1353,20 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         #endregion
 
         #region Properties
+
+        #region Notes column
+        [NinjaScriptProperty]
+        [Display(Name = "Notes", Description = "Display notes.", Order = 1, GroupName = "Notes")]
+        public bool DisplayNotes
+        { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name = "Notes URL", Description = "URL that contains notes CSV file.", Order = 2, GroupName = "Notes")]
+        public string NotesURL
+        { get; set; }
+
+        #endregion
+
         // =========== Price Column
 
         [NinjaScriptProperty]
@@ -1687,6 +1742,18 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             set { LargeAskSizeHighlightColor = NinjaTrader.Gui.Serialize.StringToBrush(value); }
         }
 
+        [XmlIgnore]
+        [NinjaScriptProperty]
+        [Display(Name = "Notes Text Color", Description = "Notes Text Color.", Order = 25, GroupName = "Visual")]
+        public Brush NotesColor
+        { get; set; }
+
+        [Browsable(false)]
+        public string NotesColorSerialize
+        {
+            get { return NinjaTrader.Gui.Serialize.BrushToString(NotesColor); }
+            set { NotesColor = NinjaTrader.Gui.Serialize.StringToBrush(value); }
+        }
 
         // =========== P/L Columns
 
