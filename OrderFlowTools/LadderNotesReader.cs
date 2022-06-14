@@ -49,7 +49,7 @@ namespace Gemify.OrderFlow
                     }
 
                     // If the entry is for another instrument, skip it
-                    if (!string.Equals(instrument.Trim(), instrument,StringComparison.InvariantCultureIgnoreCase))
+                    if (!string.Equals(instrument.Trim(), instrumentName,StringComparison.InvariantCultureIgnoreCase))
                     {
                         continue;
                     }
