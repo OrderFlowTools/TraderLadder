@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.3.8
+- Added extended support for full instrument names (ex. ESU22, MNQU22 etc) in the notes CSV (from external URL).
+
 ## v0.3.7
 - Added a Notes column, fed by an external URL (CSV file over http(s))
 
