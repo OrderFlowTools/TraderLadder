@@ -95,7 +95,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
         #region Variable Decls
         // VERSION
-        private readonly string TraderLadderVersion = "v0.3.7";
+        private readonly string TraderLadderVersion = "v0.3.8";
 
         // UI variables
         private bool clearLoadingSent;
@@ -143,6 +143,22 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
         private double LargeBidAskSizePercThreshold;
         private ConcurrentDictionary<double, string> notes;
+
+        Dictionary<int, string> globexCodes = new Dictionary<int, string>()
+            {
+                { 1,"F" },
+                { 2,"G" },
+                { 3,"H" },
+                { 4,"J" },
+                { 5,"K" },
+                { 6,"M" },
+                { 7,"N" },
+                { 8,"Q" },
+                { 9,"U" },
+                { 10,"V" },
+                { 11,"X" },
+                { 12,"Z" }
+            };
         #endregion
 
         protected override void OnStateChange()
@@ -232,7 +248,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 if (DisplayVolume)
                     columns.Add(new ColumnDefinition(ColumnType.VOLUME, ColumnSize.LARGE, DefaultBackgroundColor, GenerateVolumeText));
                 if (DisplayNotes)
-                    columns.Add(new ColumnDefinition(ColumnType.NOTES, ColumnSize.XLARGE, DefaultBackgroundColor, GenerateNotesText));
+                    columns.Add(new ColumnDefinition(ColumnType.NOTES, ColumnSize.LARGE, DefaultBackgroundColor, GenerateNotesText));
                 if (DisplayPrice)
                     columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.MEDIUM, DefaultBackgroundColor, GetPrice));
                 if (DisplayPL)
@@ -405,7 +421,9 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                     if (DisplayNotes && !string.IsNullOrWhiteSpace(NotesURL))
                     {
                         // Read notes for this instrument
-                        LadderNotesReader notesReader = new LadderNotesReader(SuperDom.Instrument.MasterInstrument.Name, SuperDom.Instrument.MasterInstrument.TickSize);
+                        string instrumentName = SuperDom.Instrument.MasterInstrument.Name;
+                        string contractCode = instrumentName + GetGlobexCode(SuperDom.Instrument.Expiry.Month, SuperDom.Instrument.Expiry.Year);
+                        LadderNotesReader notesReader = new LadderNotesReader(instrumentName, contractCode, SuperDom.Instrument.MasterInstrument.TickSize);
                         notes = notesReader.ReadCSVNotes(NotesURL);
                     }
 
@@ -455,6 +473,11 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 lastMaxIndex = 0;
                 orderFlow.ClearAll();
             }
+        }
+
+        private string GetGlobexCode(int month, int year)
+        {
+            return globexCodes[month] + (year % 10);
         }
 
         private void OnBarsUpdate(object sender, BarsUpdateEventArgs e)
@@ -747,7 +770,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 if (row.Price == SuperDom.UpperPrice)
                 {
                     Brush headerColor = HeadersTextColor;
-                    string headerText = colDef.ColumnType.GetEnumDescription();
+                    string headerText = GetEnumDescription(colDef.ColumnType);
                     if (colDef.ColumnType == ColumnType.SELLS || colDef.ColumnType == ColumnType.BUYS)
                     {
                         if (SlidingWindowLastMaxOnly)
@@ -874,7 +897,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                                 {
                                     dc.DrawRectangle(null, highlightPen, new Rect(x + 2, verticalOffset + halfPenWidth - 1, cellWidth - 3, rect.Height - highlightPen.Thickness));
                                 }
-                                else 
+                                else
                                 {
                                     if (buyTotal > sellTotal)
                                     {
@@ -941,7 +964,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         #region Text utils
         private FormattedText FormatText(string text, double renderWidth, Brush color, TextAlignment alignment)
         {
-            return new FormattedText(text.ToString(culture), culture, FlowDirection.LeftToRight, typeFace, SuperDom.Font.Size, color, pixelsPerDip) { MaxLineCount = 1, MaxTextWidth = renderWidth - 10, Trimming = TextTrimming.CharacterEllipsis, TextAlignment= alignment };
+            return new FormattedText(text.ToString(culture), culture, FlowDirection.LeftToRight, typeFace, SuperDom.Font.Size, color, pixelsPerDip) { MaxLineCount = 1, MaxTextWidth = renderWidth - 10, Trimming = TextTrimming.CharacterEllipsis, TextAlignment = alignment };
         }
 
         private void Print(string s)
@@ -952,6 +975,15 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         public static string Truncate(string value, int maxChars)
         {
             return value.Length <= maxChars ? value : value.Substring(0, maxChars) + "...";
+        }
+
+        public string GetEnumDescription(Enum enumValue)
+        {
+            var fieldInfo = enumValue.GetType().GetField(enumValue.ToString());
+
+            var descriptionAttributes = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);
+
+            return descriptionAttributes.Length > 0 ? descriptionAttributes[0].Description : enumValue.ToString();
         }
 
         #endregion        
