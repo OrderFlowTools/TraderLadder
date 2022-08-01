@@ -1,6 +1,6 @@
 # Release Notes
 
-## v0.3.8
+## v0.3.9
 - BUG FIX: Added a configurable Notes Delimiter to address price formatting (comma instead of dot in prices. Ex. 4120,75 instead of 4120.75). Thanks Hermann! (https://github.com/OrderFlowTools/TraderLadder/issues/16)
 
 ## v0.3.8
