@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,17 +17,19 @@ namespace Gemify.OrderFlow
         private double tickPriceIncrement;
         private string instrumentShortName;
         private string instrumentFullName;
+        private char delimiter;
         private Indicator ind = new Indicator();
 
-        public LadderNotesReader(string instrumentShortName, string instrumentFullName, double tickPriceIncrement)
+        public LadderNotesReader(char delimiter, string instrumentShortName, string instrumentFullName, double tickPriceIncrement)
         {
+            this.delimiter = delimiter;
             this.tickPriceIncrement = tickPriceIncrement;
             this.instrumentShortName = instrumentShortName;
             this.instrumentFullName = instrumentFullName;
         }
 
         internal ConcurrentDictionary<double, string> ReadCSVNotes(string csvURL)
-        {
+        {            
             ConcurrentDictionary<double, string> notesMap = new ConcurrentDictionary<double, string>();
             using (StringReader reader = new StringReader(ReadCSVFromURL(csvURL)))
             {
@@ -38,8 +40,9 @@ namespace Gemify.OrderFlow
                     if (string.IsNullOrWhiteSpace(line)) continue;
 
                     // CSV format expected is:
-                    // INSTRUMENT,PRICE,NOTE
-                    string[] values = line.Split(',');
+                    // INSTRUMENT,PRICE,NOTE where ',' is specified delimiter
+                    string[] values = line.Split(delimiter);
+					if (values.Length < 3) return null;
                     string instrument = values[0];
                     string priceKey = values[1];
                     string note = values[2];
