@@ -233,6 +233,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 DisplaySlidingWindowTotals = true;
 
                 NotesURL = string.Empty;
+                NotesDelimiter = ',';
                 NotesColor = Brushes.RoyalBlue;
 
                 // This can be toggled - ie, display last size at price instead of cumulative buy/sell.
@@ -424,7 +425,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                         // Read notes for this instrument
                         string instrumentName = SuperDom.Instrument.MasterInstrument.Name;
                         string contractCode = instrumentName + GetGlobexCode(SuperDom.Instrument.Expiry.Month, SuperDom.Instrument.Expiry.Year);
-                        LadderNotesReader notesReader = new LadderNotesReader(instrumentName, contractCode, SuperDom.Instrument.MasterInstrument.TickSize);
+                        LadderNotesReader notesReader = new LadderNotesReader(NotesDelimiter, instrumentName, contractCode, SuperDom.Instrument.MasterInstrument.TickSize);
                         notes = notesReader.ReadCSVNotes(NotesURL);
                     }
 
@@ -1398,6 +1399,11 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         [NinjaScriptProperty]
         [Display(Name = "Notes URL", Description = "URL that contains notes CSV file.", Order = 2, GroupName = "Notes")]
         public string NotesURL
+        { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name = "Notes Delimiter", Description = "CSV delimiter.", Order = 3, GroupName = "Notes")]
+        public char NotesDelimiter
         { get; set; }
 
         #endregion
