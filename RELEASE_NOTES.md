@@ -1,7 +1,7 @@
 # Release Notes
 
 ## v0.3.8
-- BUG FIX: Added a configurable Notes Delimiter to address price formatting (comma instead of dot in prices. Ex. 4120,75 instead of 4120.75) https://github.com/OrderFlowTools/TraderLadder/issues/16. Thanks Hermann!
+- BUG FIX: Added a configurable Notes Delimiter to address price formatting (comma instead of dot in prices. Ex. 4120,75 instead of 4120.75). Thanks Hermann! (https://github.com/OrderFlowTools/TraderLadder/issues/16)
 
 ## v0.3.8
 - Added extended support for full instrument names (ex. ESU22, MNQU22 etc) in the notes CSV (from external URL).
