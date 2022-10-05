@@ -109,10 +109,10 @@ namespace Gemify.OrderFlow
             return notesMap;
         }
 
-        internal string ReadCSVFromURL(string url)
-        {
-            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
-            HttpWebResponse response = (HttpWebResponse)webRequest.GetResponse();
+        internal string ReadCSVFromURL(string url) { 
+            
+            WebRequest webRequest = WebRequest.Create(url);
+            WebResponse response = webRequest.GetResponse();
 
             StreamReader reader = null;
             string csv = string.Empty;
