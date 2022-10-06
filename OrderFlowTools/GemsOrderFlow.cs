@@ -7,6 +7,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using LadderRow = NinjaTrader.Gui.SuperDom.LadderRow;
 
 namespace Gemify.OrderFlow
 {
@@ -158,7 +159,7 @@ namespace Gemify.OrderFlow
             ind.Print(s);
         }
 
-        internal void SetBidLadder(List<NinjaTrader.Gui.SuperDom.LadderRow> newBidLadder)
+        internal void SetBidLadder(List<LadderRow> newBidLadder)
         {
             try
             {
@@ -166,7 +167,7 @@ namespace Gemify.OrderFlow
                 BidChange.Clear();
                 if (newBidLadder != null)
                 {
-                    foreach (NinjaTrader.Gui.SuperDom.LadderRow row in newBidLadder)
+                    foreach (LadderRow row in newBidLadder)
                     {
                         BidAsk entry = new BidAsk(row.Volume, row.Time);
                         if (CurrBid != null) CurrBid.TryAdd(row.Price, entry);                        
@@ -179,7 +180,7 @@ namespace Gemify.OrderFlow
             }
         }
 
-        internal void SetAskLadder(List<NinjaTrader.Gui.SuperDom.LadderRow> newAskLadder)
+        internal void SetAskLadder(List<LadderRow> newAskLadder)
         {
             try
             {
@@ -187,7 +188,7 @@ namespace Gemify.OrderFlow
                 AskChange.Clear();
                 if (newAskLadder != null)
                 {
-                    foreach (NinjaTrader.Gui.SuperDom.LadderRow row in newAskLadder)
+                    foreach (LadderRow row in newAskLadder)
                     {
                         BidAsk entry = new BidAsk(row.Volume, row.Time);
                         if (CurrAsk != null) CurrAsk.TryAdd(row.Price, entry);                        
