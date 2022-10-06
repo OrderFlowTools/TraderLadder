@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.4.0
+- Bid/Ask stacking/pulling is now displayed persistently instead of in a fleeting moment*.
+*With extremely fast changes, only the last update will be visible.
+- The Notes column is now able to display notes from either a:
+   - local file (ex. D:\temp\data.csv), or
+   - a hosted file on a web server (ex. http://myserver.com/files/levels.csv)
+
 ## v0.3.9
 - BUG FIX: Added a configurable Notes Delimiter to address price formatting (comma instead of dot in prices. Ex. 4120,75 instead of 4120.75). Thanks Hermann! (https://github.com/OrderFlowTools/TraderLadder/issues/16)
 
