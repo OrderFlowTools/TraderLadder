@@ -2,15 +2,11 @@
 // Copyright (C) 2021, Gem Immanuel (gemify@gmail.com)
 //
 
-using NinjaTrader.Cbi;
+using NinjaTrader.NinjaScript.Indicators;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NinjaTrader.NinjaScript.Indicators;
-using NinjaTrader.Gui.SuperDom;
 
 namespace Gemify.OrderFlow
 {
@@ -22,9 +18,13 @@ namespace Gemify.OrderFlow
 
     class Trade
     {
+        internal TradeAggressor aggressor { get; set; }
         internal long Size { get; set; }
+        internal long swCumulSize { get; set; }
         internal double Ask { get; set; }
         internal double Bid { get; set; }
+        internal double AskSize { get; set; }
+        internal double BidSize { get; set; }
         internal DateTime Time { get; set; }
     }
 
@@ -83,8 +83,6 @@ namespace Gemify.OrderFlow
 
         private ConcurrentDictionary<double, BidAsk> CurrBid;
         private ConcurrentDictionary<double, BidAsk> CurrAsk;
-        private ConcurrentDictionary<double, BidAsk> PrevBid;
-        private ConcurrentDictionary<double, BidAsk> PrevAsk;
         private ConcurrentDictionary<double, long> BidChange;
         private ConcurrentDictionary<double, long> AskChange;
         private ConcurrentDictionary<double, BidAskPerc> BidsPerc;
@@ -120,8 +118,6 @@ namespace Gemify.OrderFlow
 
             CurrAsk = new ConcurrentDictionary<double, BidAsk>();
             CurrBid = new ConcurrentDictionary<double, BidAsk>();
-            PrevAsk = new ConcurrentDictionary<double, BidAsk>();
-            PrevBid = new ConcurrentDictionary<double, BidAsk>();
             AskChange = new ConcurrentDictionary<double, long>();
             BidChange = new ConcurrentDictionary<double, long>();
             BidsPerc = new ConcurrentDictionary<double, BidAskPerc>();
@@ -136,8 +132,6 @@ namespace Gemify.OrderFlow
             TotalBuys.Clear();
             TotalSells.Clear();
 
-            PrevBid.Clear();
-            PrevAsk.Clear();
             CurrBid.Clear();
             CurrAsk.Clear();
             BidChange.Clear();
@@ -168,8 +162,8 @@ namespace Gemify.OrderFlow
         {
             try
             {
-                PrevBid = new ConcurrentDictionary<double, BidAsk>(CurrBid);
                 CurrBid.Clear();
+                BidChange.Clear();
                 if (newBidLadder != null)
                 {
                     foreach (NinjaTrader.Gui.SuperDom.LadderRow row in newBidLadder)
@@ -182,7 +176,6 @@ namespace Gemify.OrderFlow
             catch (Exception ex)
             {
                 // NOP for now. 
-                // TODO: Need to implement external orderbook
             }
         }
 
@@ -190,8 +183,8 @@ namespace Gemify.OrderFlow
         {
             try
             {
-                PrevAsk = new ConcurrentDictionary<double, BidAsk>(CurrAsk);
                 CurrAsk.Clear();
+                AskChange.Clear();
                 if (newAskLadder != null)
                 {
                     foreach (NinjaTrader.Gui.SuperDom.LadderRow row in newAskLadder)
@@ -204,22 +197,24 @@ namespace Gemify.OrderFlow
             catch (Exception ex)
             {
                 // NOP for now. 
-                // TODO: Need to implement external orderbook
             }
-        }
+        }        
 
         internal BidAsk AddOrUpdateBid(double price, long size, DateTime time)
         {
-            // Copy current value into prev
             BidAsk currBidAsk = null;
-            if (CurrBid.TryGetValue(price, out currBidAsk))
-            {
-                PrevBid.AddOrUpdate(price, currBidAsk, (key, existing) => currBidAsk);
-            }
+            CurrBid.TryGetValue(price, out currBidAsk);
 
             // Change in bid size
             long change = Convert.ToInt64(size - (currBidAsk == null ? 0 : currBidAsk.Size));
-            BidChange.AddOrUpdate(price, change, (key, value) => change);
+            if (size > 0)
+            {
+                BidChange.AddOrUpdate(price, change, (key, value) => change);
+            }
+            else
+            {
+                BidChange.AddOrUpdate(price, 0, (key, value) => 0);
+            }
 
             // Add or replace current entry
             BidAsk newBidAsk = new BidAsk(size, time);
@@ -228,16 +223,19 @@ namespace Gemify.OrderFlow
 
         internal BidAsk AddOrUpdateAsk(double price, long size, DateTime time)
         {
-            // Copy current value into prev
             BidAsk currBidAsk = null;
-            if (CurrAsk.TryGetValue(price, out currBidAsk))
-            {
-                PrevAsk.AddOrUpdate(price, currBidAsk, (key, existing) => currBidAsk);
-            }
+            CurrAsk.TryGetValue(price, out currBidAsk);
 
             // Change in ask size
             long change = Convert.ToInt64(size - (currBidAsk == null ? 0 : currBidAsk.Size));
-            AskChange.AddOrUpdate(price, change, (key, value) => change);
+            if (size > 0)
+            {
+                AskChange.AddOrUpdate(price, change, (key, value) => change);
+            }
+            else
+            {
+                AskChange.AddOrUpdate(price, 0, (key, value) => 0);
+            }
 
             // Add or replace current entry
             BidAsk newBidAsk = new BidAsk(size, time);
@@ -247,7 +245,7 @@ namespace Gemify.OrderFlow
         /*
          * Classifies given trade as either buyer or seller initiated based on configured classifier.
          */
-        internal void ClassifyTrade(bool updateSlidingWindow, double ask, double bid, double close, long volume, DateTime time)
+        internal void ClassifyTrade(bool updateSlidingWindow, double ask, double askSize, double bid, double bidSize, double close, long volume, DateTime time)
         {
             TradeAggressor aggressor = tradeClassifier.ClassifyTrade(ask, bid, close, volume, time);
 
@@ -258,16 +256,19 @@ namespace Gemify.OrderFlow
                 bool gotOldTrade = SlidingWindowBuys.TryGetValue(close, out oldTrade);
 
                 Trade trade = new Trade();
+                trade.aggressor = aggressor;
                 trade.Ask = ask;
+                trade.AskSize = askSize;
                 trade.Time = time;
+                trade.Size = volume;
 
                 if (gotOldTrade)
                 {
-                    trade.Size = oldTrade.Size + volume;
+                    trade.swCumulSize = oldTrade.swCumulSize + volume;
                 }
                 else
                 {
-                    trade.Size = volume;
+                    trade.swCumulSize = volume;
                 }
 
                 if (updateSlidingWindow)
@@ -291,16 +292,19 @@ namespace Gemify.OrderFlow
                 bool gotOldTrade = SlidingWindowSells.TryGetValue(close, out oldTrade);
 
                 Trade trade = new Trade();
+                trade.aggressor = aggressor;
                 trade.Bid = bid;
+                trade.BidSize = bidSize;
                 trade.Time = time;
+                trade.Size = volume;
 
                 if (gotOldTrade)
                 {
-                    trade.Size = oldTrade.Size + volume;
+                    trade.swCumulSize = oldTrade.swCumulSize + volume;
                 }
                 else
                 {
-                    trade.Size = volume;
+                    trade.swCumulSize = volume;
                 }
 
                 if (updateSlidingWindow)
@@ -328,7 +332,7 @@ namespace Gemify.OrderFlow
             long total = 0;
             foreach (Trade trade in SlidingWindowBuys.Values)
             {
-                total += trade.Size;
+                total += trade.swCumulSize;
             }
             return total;
         }
@@ -341,7 +345,7 @@ namespace Gemify.OrderFlow
             long total = 0;
             foreach (Trade trade in SlidingWindowSells.Values)
             {
-                total += trade.Size;
+                total += trade.swCumulSize;
             }
             return total;
         }
@@ -410,20 +414,6 @@ namespace Gemify.OrderFlow
             return prices.LastOrDefault();
 
         }
-
-        internal double GetSessionHigh()
-        {
-            IOrderedEnumerable<double> prices = TotalBuys.Keys.OrderByDescending(i => ((float)i));
-            return prices.FirstOrDefault();
-        }
-
-        internal double GetSessionLow()
-        {
-            IOrderedEnumerable<double> prices = TotalSells.Keys.OrderByDescending(i => ((float)i));
-            return prices.LastOrDefault();
-
-        }
-
 
         /*
          * Gets total volume transacted (buyers + sellers) at given price.
@@ -495,11 +485,11 @@ namespace Gemify.OrderFlow
 
                 Trade buyTrade;
                 bool gotBuy = SlidingWindowBuys.TryGetValue(buyPrice, out buyTrade);
-                long buySize = gotBuy ? buyTrade.Size : 0;
+                long buySize = gotBuy ? buyTrade.swCumulSize : 0;
 
                 Trade sellTrade;
                 bool gotSell = SlidingWindowSells.TryGetValue(buyPrice - tickSize, out sellTrade);
-                long sellSize = gotSell ? sellTrade.Size : 0;
+                long sellSize = gotSell ? sellTrade.swCumulSize : 0;
 
                 if (gotSell && buySize >= sellSize * imbalanceFactor)
                     buyImbalance += buySize;
@@ -522,11 +512,11 @@ namespace Gemify.OrderFlow
 
                 Trade sellTrade;
                 bool gotSell = SlidingWindowSells.TryGetValue(sellPrice, out sellTrade);
-                long sellSize = gotSell ? sellTrade.Size : 0;
+                long sellSize = gotSell ? sellTrade.swCumulSize : 0;
 
                 Trade buyTrade;
                 bool gotBuy = SlidingWindowBuys.TryGetValue(sellPrice + tickSize, out buyTrade);
-                long buySize = gotBuy ? buyTrade.Size : 0;
+                long buySize = gotBuy ? buyTrade.swCumulSize : 0;
 
                 if (gotBuy && sellSize >= buySize * imbalanceFactor)
                     sellImbalance += sellSize;
@@ -602,16 +592,15 @@ namespace Gemify.OrderFlow
             return volume;
         }
 
-        internal void CalculateBidAskPerc()
+        internal void CalculateBidAskPerc(double tickSize, double currentBidPrice, double currentAskPrice, double lowerBidCutOffPrice, double upperAskCutOffPrice)
         {
-
             AsksPerc.Clear();
             BidsPerc.Clear();
 
-            // Calculate Total Bid/Ask Sizes (for histogram drawing)
-            double bidAskTotalVolume = CalculateBidAskTotalVolume();
+            // Calculate largest Bid/Ask Size (for histogram drawing)
+            double largestBidAskSize = GetLargestBidAskSize(tickSize, currentBidPrice, currentAskPrice, lowerBidCutOffPrice, upperAskCutOffPrice);
 
-            foreach (double price in CurrAsk.Keys)
+            for (double price = currentAskPrice; price < upperAskCutOffPrice; price += tickSize)
             {
                 BidAsk currentAsk;
                 if (!CurrAsk.TryGetValue(price, out currentAsk)) continue;
@@ -619,11 +608,11 @@ namespace Gemify.OrderFlow
                 // Calculate percentage of current ask volume relative to total bid/ask volume
                 BidAskPerc perc = new BidAskPerc();
                 perc.Size = currentAsk.Size;
-                perc.Perc = currentAsk.Size / bidAskTotalVolume;
+                perc.Perc = currentAsk.Size / largestBidAskSize;
                 AsksPerc.AddOrUpdate(price, perc, (key, existing) => existing = perc);
             }
 
-            foreach (double price in CurrBid.Keys)
+            for (double price = currentBidPrice; price > lowerBidCutOffPrice; price -= tickSize)
             {
                 BidAsk currentBid;
                 if (!CurrBid.TryGetValue(price, out currentBid)) continue;
@@ -631,21 +620,29 @@ namespace Gemify.OrderFlow
                 // Calculate percentage of current bid volume relative to total bid/ask volume
                 BidAskPerc perc = new BidAskPerc();
                 perc.Size = currentBid.Size;
-                perc.Perc = currentBid.Size / bidAskTotalVolume;
+                perc.Perc = currentBid.Size / largestBidAskSize;
                 BidsPerc.AddOrUpdate(price, perc, (key, existing) => existing = perc);
             }
         }
 
-        private double CalculateBidAskTotalVolume()
+        private double GetLargestBidAskSize(double tickSize, double currentBidPrice, double currentAskPrice, double lowerBidCutOffPrice, double upperAskCutOffPrice)
         {
             double maxBidAsk = 0;
-            foreach (BidAsk bidAsk in CurrAsk.Values)
+            for (double price = currentAskPrice; price < upperAskCutOffPrice; price += tickSize)
             {
-                maxBidAsk = bidAsk.Size > maxBidAsk ? bidAsk.Size : maxBidAsk;
+                BidAsk bidAsk;
+                if (CurrAsk.TryGetValue(price, out bidAsk))
+                {
+                    maxBidAsk = bidAsk.Size > maxBidAsk ? bidAsk.Size : maxBidAsk;
+                }
             }
-            foreach (BidAsk bidAsk in CurrBid.Values)
+            for (double price = currentBidPrice; price > lowerBidCutOffPrice; price -= tickSize)
             {
-                maxBidAsk = bidAsk.Size > maxBidAsk ? bidAsk.Size : maxBidAsk;
+                BidAsk bidAsk;
+                if (CurrBid.TryGetValue(price, out bidAsk))
+                {
+                    maxBidAsk = bidAsk.Size > maxBidAsk ? bidAsk.Size : maxBidAsk;
+                }
             }
 
             return maxBidAsk;
@@ -660,17 +657,16 @@ namespace Gemify.OrderFlow
 
         internal long GetAskChange(double price)
         {
-
-            long currentSize = GetAsk(price);
-            long prevSize = GetPrevAsk(price);
-            return (prevSize > 0 && currentSize > 0) ? (currentSize - prevSize) : 0;
+            long value = 0;
+            AskChange.TryGetValue(price, out value);
+            return value;
         }
 
         internal long GetBidChange(double price)
         {
-            long currentSize = GetBid(price);
-            long prevSize = GetPrevBid(price);
-            return (prevSize > 0 && currentSize > 0) ? (currentSize - prevSize) : 0;
+            long value = 0;
+            BidChange.TryGetValue(price, out value);
+            return value;
         }
 
         internal Trade GetBuysInSlidingWindow(double price)
@@ -758,27 +754,6 @@ namespace Gemify.OrderFlow
             {
                 return Convert.ToInt64(entry.Size);
             }
-            return 0;
-        }
-
-        internal long GetPrevBid(double price)
-        {
-            BidAsk entry;
-            if (PrevBid.TryGetValue(price, out entry))
-            {
-                return Convert.ToInt64(entry.Size);
-            }
-            return 0;
-        }
-
-        internal long GetPrevAsk(double price)
-        {
-            BidAsk entry;
-            if (PrevAsk.TryGetValue(price, out entry))
-            {
-                return Convert.ToInt64(entry.Size);
-            }
-
             return 0;
         }
     }
