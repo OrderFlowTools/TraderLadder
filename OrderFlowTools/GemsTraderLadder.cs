@@ -5,7 +5,6 @@
 using NinjaTrader.Cbi;
 using NinjaTrader.Data;
 using NinjaTrader.Gui.SuperDom;
-using NinjaTrader.NinjaScript.Indicators;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,6 +17,8 @@ using System.Xml.Serialization;
 using System.Globalization;
 using Gemify.OrderFlow;
 using Trade = Gemify.OrderFlow.Trade;
+using Indicator = NinjaTrader.NinjaScript.Indicators.Indicator;
+
 #endregion
 
 namespace NinjaTrader.NinjaScript.SuperDomColumns
@@ -610,9 +611,9 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             }
         }
 
-        private List<NinjaTrader.Gui.SuperDom.LadderRow> GetBidLadderCopy()
+        private List<LadderRow> GetBidLadderCopy()
         {
-            List<NinjaTrader.Gui.SuperDom.LadderRow> ladder = null;
+            List<LadderRow> ladder = null;
             try
             {
                 if (SuperDom.MarketDepth.Bids.Count > 0)
@@ -628,7 +629,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                     {
                         ladder = SuperDom.MarketDepth.Bids;
                     }
-                    ladder = new List<NinjaTrader.Gui.SuperDom.LadderRow>(ladder);
+                    ladder = new List<LadderRow>(ladder);
                 }
             }
             catch (Exception e)
@@ -638,9 +639,9 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             return ladder;
         }
 
-        private List<NinjaTrader.Gui.SuperDom.LadderRow> GetAskLadderCopy()
+        private List<LadderRow> GetAskLadderCopy()
         {
-            List<NinjaTrader.Gui.SuperDom.LadderRow> ladder = null;
+            List<LadderRow> ladder = null;
             try
             {
                 if (SuperDom.MarketDepth.Asks.Count > 0)
@@ -656,7 +657,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                     {
                         ladder = SuperDom.MarketDepth.Asks;
                     }
-                    ladder = new List<NinjaTrader.Gui.SuperDom.LadderRow>(ladder);
+                    ladder = new List<LadderRow>(ladder);
                 }
             }
             catch (Exception e)
