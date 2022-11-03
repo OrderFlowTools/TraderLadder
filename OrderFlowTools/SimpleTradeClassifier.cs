@@ -8,33 +8,57 @@ namespace Gemify.OrderFlow
 {
     class SimpleTradeClassifier : ITradeClassifier
     {
-        /*
-         * Simple trade classifier implementation. 
-         */
-        TradeAggressor ITradeClassifier.ClassifyTrade(double ask, double bid, double close, long volume, DateTime time)
+
+        /// <summary>
+        /// Simple trade classifier implementation. No ICE implementation.
+        /// </summary>
+        /// <param name="askPrice"></param>
+        /// <param name="askSize"></param>
+        /// <param name="bidPrice"></param>
+        /// <param name="bidSize"></param>
+        /// <param name="tradePrice"></param>
+        /// <param name="tradeSize"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public TradeAggressor ClassifyTrade(double askPrice, long askSize, double bidPrice, long bidSize, double tradePrice, long tradeSize, DateTime time)
+        {
+            throw new NotImplementedException("Not implemented");
+        }
+
+        /// <summary>
+        /// Simple trade classifier implementation. 
+        /// </summary>
+        /// <param name="askPrice"></param>
+        /// <param name="bidPrice"></param>
+        /// <param name="tradePrice"></param>
+        /// <param name="tradeSize"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public TradeAggressor ClassifyTrade(double askPrice, double bidPrice, double tradePrice, long tradeSize, DateTime time)
         {
             TradeAggressor aggressor;
-            
-            double midpoint = (ask + bid) / 2.0;
 
-            if (ask == bid)
+            double midpoint = (askPrice + bidPrice) / 2.0;
+
+            if (askPrice == bidPrice)
             {
-                if (close > ask)
+                if (tradePrice > askPrice)
                 {
                     aggressor = TradeAggressor.BUYER;
                 }
-                else 
+                else
                 {
                     aggressor = TradeAggressor.SELLER;
                 }
             }
             else
             {
-                if (close > midpoint)
+                if (tradePrice > midpoint)
                 {
                     aggressor = TradeAggressor.BUYER;
                 }
-                else 
+                else
                 {
                     aggressor = TradeAggressor.SELLER;
                 }
