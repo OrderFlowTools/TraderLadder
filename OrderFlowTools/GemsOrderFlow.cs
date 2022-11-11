@@ -4,6 +4,7 @@
 
 using NinjaTrader.NinjaScript.Indicators;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,16 +18,20 @@ namespace Gemify.OrderFlow
         internal double sellStrength = 0.0;
     }
 
-    class Trade
+    class TimeStamped
+    {
+        internal long Size;
+        internal DateTime Time { get; set; }
+    }
+
+    class Trade : TimeStamped
     {
         internal TradeAggressor aggressor { get; set; }
-        internal long Size { get; set; }
         internal long swCumulSize { get; set; }
         internal double Ask { get; set; }
         internal double Bid { get; set; }
         internal double AskSize { get; set; }
         internal double BidSize { get; set; }
-        internal DateTime Time { get; set; }
     }
 
     class BidAsk
@@ -73,8 +78,8 @@ namespace Gemify.OrderFlow
 
         private ConcurrentDictionary<double, Trade> SlidingWindowBuys;
         private ConcurrentDictionary<double, Trade> SlidingWindowSells;
-        private ConcurrentDictionary<double, long> BIce;
-        private ConcurrentDictionary<double, long> SIce;
+        private ConcurrentDictionary<double, TimeStamped> BIce;
+        private ConcurrentDictionary<double, TimeStamped> SIce;
         private ConcurrentDictionary<double, long> SessionBuys;
         private ConcurrentDictionary<double, long> SessionSells;
 
@@ -122,8 +127,8 @@ namespace Gemify.OrderFlow
 
             SlidingWindowBuys = new ConcurrentDictionary<double, Trade>();
             SlidingWindowSells = new ConcurrentDictionary<double, Trade>();
-            BIce = new ConcurrentDictionary<double, long>();
-            SIce = new ConcurrentDictionary<double, long>();
+            BIce = new ConcurrentDictionary<double, TimeStamped>();
+            SIce = new ConcurrentDictionary<double, TimeStamped>();
             SessionBuys = new ConcurrentDictionary<double, long>();
             SessionSells = new ConcurrentDictionary<double, long>();
 
@@ -306,7 +311,7 @@ namespace Gemify.OrderFlow
 
                     if (aggressor == TradeAggressor.BICE)
                     {
-                        BIce.AddOrUpdate(tradePrice, tradeSize, (price, oldVolume) => oldVolume + tradeSize);
+                        BIce.AddOrUpdate(tradePrice, new Trade() { Size = tradeSize, Time = time }, (price, oldItem) => new Trade() { Size = (oldItem.Size + tradeSize), Time = time });
                         DataTotals.bice += tradeSize;
                     }
 
@@ -357,7 +362,7 @@ namespace Gemify.OrderFlow
 
                     if (aggressor == TradeAggressor.SICE)
                     {
-                        SIce.AddOrUpdate(tradePrice, tradeSize, (price, oldVolume) => oldVolume + tradeSize);
+                        SIce.AddOrUpdate(tradePrice, new Trade() { Size = tradeSize, Time = time }, (price, oldItem) => new Trade() { Size = (oldItem.Size + tradeSize), Time = time });
                         DataTotals.sice += tradeSize;
                     }
 
@@ -529,6 +534,34 @@ namespace Gemify.OrderFlow
                     }
                 }
             }
+
+            foreach (double price in BIce.Keys)
+            {
+                TimeStamped item;
+                if (BIce.TryGetValue(price, out item))
+                {
+                    TimeSpan diff = time - item.Time;
+                    if (diff.TotalSeconds > TradeSlidingWindowSeconds)
+                    {
+                        DataTotals.bice -= item.Size;
+                        BIce.TryRemove(price, out item);                        
+                    }
+                }
+            }
+            foreach (double price in SIce.Keys)
+            {
+                TimeStamped item;
+                if (SIce.TryGetValue(price, out item))
+                {
+                    TimeSpan diff = time - item.Time;
+                    if (diff.TotalSeconds > TradeSlidingWindowSeconds)
+                    {
+                        DataTotals.sice -= item.Size;
+                        SIce.TryRemove(price, out item);
+                    }
+                }
+            }
+
         }
 
         internal long GetImbalancedBuys(double currentPrice, double tickSize)
@@ -832,21 +865,23 @@ namespace Gemify.OrderFlow
             return DataTotals.largestSessionSize;
         }
 
+        internal long GetLargestSessionSize(double lowerPrice, double upperPrice)
+        {
+            var bSizes = SessionBuys.Where(kvp => kvp.Key > lowerPrice && kvp.Key < upperPrice);
+            long largestSessionBuy = bSizes.OrderByDescending(i => (i.Value)).FirstOrDefault().Value;
+            var sSizes = SessionSells.Where(kvp => kvp.Key > lowerPrice && kvp.Key < upperPrice);
+            long largestSessionSell = sSizes.OrderByDescending(i => (i.Value)).FirstOrDefault().Value;
+            return Math.Max(largestSessionBuy, largestSessionSell);
+        }
+
         /*
-                * Gets largest buy volume in the sliding window
-                */
+        * Gets largest buy volume in the sliding window
+        */
         internal long GetLargestBuyInSlidingWindow()
         {
-            long largest = 0;
-            foreach (double price in SlidingWindowBuys.Keys)
-            {
-                Trade t = null;
-                if (SlidingWindowBuys.TryGetValue(price, out t))
-                {
-                    largest = Math.Max(t.swCumulSize, largest);
-                }
-            }
-            return largest;
+            IOrderedEnumerable<Trade> trades = SlidingWindowBuys.Values.OrderByDescending(i => ((Trade)i).swCumulSize);
+            Trade item = trades.FirstOrDefault();
+            return item == null ? 0 : item.swCumulSize;
         }
 
         /*
@@ -854,95 +889,62 @@ namespace Gemify.OrderFlow
         */
         internal long GetLargestSellInSlidingWindow()
         {
-            long largest = 0;
-            foreach (double price in SlidingWindowSells.Keys)
-            {
-                Trade t = null;
-                if (SlidingWindowSells.TryGetValue(price, out t))
-                {
-                    largest = Math.Max(t.swCumulSize, largest);
-                }
-            }
-            return largest;
+            IOrderedEnumerable<Trade> trades = SlidingWindowSells.Values.OrderByDescending(i => ((Trade)i).swCumulSize);
+            Trade item = trades.FirstOrDefault();
+            return item == null ? 0 : item.swCumulSize;
         }
 
-        internal double GetLargestMaxBuyInSlidingWindow()
+        internal long GetLargestMaxBuyInSlidingWindow()
         {
-            long largest = 0;
-            foreach (double price in LastBuyPrintMax.Keys)
-            {
-                long val = 0;
-                if (LastBuyPrintMax.TryGetValue(price, out val))
-                {
-                    largest = Math.Max(val, largest);
-                }
-            }
-            return largest;            
+            IOrderedEnumerable<long> items = LastBuyPrintMax.Values.OrderByDescending(i => (long)i);
+            return items.FirstOrDefault();
         }
-        internal double GetLargestMaxSellInSlidingWindow()
+        internal long GetLargestMaxSellInSlidingWindow()
         {
-            long largest = 0;
-            foreach (double price in LastSellPrintMax.Keys)
-            {
-                long val = 0;
-                if (LastSellPrintMax.TryGetValue(price, out val))
-                {
-                    largest = Math.Max(val, largest);
-                }
-            }
-            return largest;
+            IOrderedEnumerable<long> items = LastSellPrintMax.Values.OrderByDescending(i => (long)i);
+            return items.FirstOrDefault();
         }
-        internal double GetLargestLastBuyInSlidingWindow()
+        internal long GetLargestLastBuyInSlidingWindow()
         {
-            long largest = 0;
-            foreach (double price in LastBuyPrint.Keys)
-            {
-                long val = 0;
-                if (LastBuyPrint.TryGetValue(price, out val))
-                {
-                    largest = Math.Max(val, largest);
-                }
-            }
-            return largest;
+            IOrderedEnumerable<long> items = LastBuyPrint.Values.OrderByDescending(i => (long)i);
+            return items.FirstOrDefault();
         }
-        internal double GetLargestLastSellInSlidingWindow()
+        internal long GetLargestLastSellInSlidingWindow()
         {
-            long largest = 0;
-            foreach (double price in LastSellPrint.Keys)
-            {
-                long val = 0;
-                if (LastSellPrint.TryGetValue(price, out val))
-                {
-                    largest = Math.Max(val, largest);
-                }
-            }
-            return largest;
+            IOrderedEnumerable<long> items = LastSellPrint.Values.OrderByDescending(i => (long)i);
+            return items.FirstOrDefault();
         }
 
         internal long GetBIce(double price)
         {
-            long bice = 0;
-            BIce.TryGetValue(price, out bice);
-            return bice;
+            TimeStamped item;
+            if (BIce.TryGetValue(price, out item))
+                return item.Size;
+            else
+                return 0;
         }
 
         internal long GetSIce(double price)
         {
-            long sice = 0;
-            SIce.TryGetValue(price, out sice);
-            return sice;
+            TimeStamped item;
+            if (SIce.TryGetValue(price, out item))
+                return item.Size;
+            else
+                return 0;
         }
 
         internal double GetLargestBIce()
         {
-            IOrderedEnumerable<long> ices = BIce.Values.OrderByDescending(i => ((long)i));
-            return ices.FirstOrDefault();
+            IOrderedEnumerable<TimeStamped> ices = BIce.Values.OrderByDescending(i => ((TimeStamped)i).Size);
+            TimeStamped item = ices.FirstOrDefault();
+            return item == null ? 0 : item.Size;
         }
 
         internal double GetLargestSIce()
         {
-            IOrderedEnumerable<long> ices = SIce.Values.OrderByDescending(i => ((long)i));
-            return ices.FirstOrDefault();
+            IOrderedEnumerable<TimeStamped> ices = SIce.Values.OrderByDescending(i => ((TimeStamped)i).Size);
+            TimeStamped item = ices.FirstOrDefault();
+            return item == null ? 0 : item.Size;
         }
 
         internal long GetTotalBIce()
