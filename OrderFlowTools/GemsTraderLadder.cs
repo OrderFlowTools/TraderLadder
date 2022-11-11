@@ -306,8 +306,8 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 DisplaySlidingWindowBuysSells = true;
                 DisplayBuySellHistogram = true; 
                 DisplaySlidingWindowTotalsInSummaryRow = true;
-                DisplayVolumeHistogram = true;
-                DisplayVolumeText = true;
+                DisplayVolumeHistogram = false;
+                DisplayVolumeText = false;
                                 
                 DisplayBidAsk = false;
                 DisplayBidAskHistogram = false;
@@ -351,7 +351,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 if (DisplayNotes)
                     columns.Add(new ColumnDefinition(ColumnType.NOTES, ColumnSize.LARGE, DefaultBackgroundColor, GenerateNotesText));
                 if (DisplayPrice)
-                    columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.MEDIUM, DefaultBackgroundColor, GetPrice));
+                    columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.SMALL, DefaultBackgroundColor, GetPrice));
                 if (DisplayPL)
                     columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.MEDIUM, DefaultBackgroundColor, CalculatePL));
                 if (DisplayBidAskChange)
@@ -1035,7 +1035,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
                                 if (paintWidth >= 0)
                                 {
-                                    double xc = x + (cellWidth - paintWidth);
+                                    double xc = x + (colDef.ColumnType == ColumnType.ASK ? 1 : (cellWidth - paintWidth));
                                     dc.DrawRectangle(null, pen, new Rect(xc, verticalOffset, paintWidth, cellRect.Height - pen.Thickness * 2));
                                 }
                             }
@@ -1480,7 +1480,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 long currentSize = (price >= SuperDom.CurrentAsk + BidAskCutoffTicks) ? 0 : orderFlow.GetAskSize(price);
 
                 if (currentSize > 0)
-                    return FormatText(currentSize.ToString(), renderWidth, DefaultTextColor, TextAlignment.Right);
+                    return FormatText(" " + currentSize.ToString(), renderWidth, DefaultTextColor, TextAlignment.Left);
             }
             return null;
         }
@@ -1492,7 +1492,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 long currentSize = (price <= SuperDom.CurrentBid - BidAskCutoffTicks) ? 0 : orderFlow.GetBidSize(price);
 
                 if (currentSize > 0) 
-                    return FormatText(currentSize.ToString(), renderWidth, DefaultTextColor, TextAlignment.Right);
+                    return FormatText(currentSize.ToString() + " ", renderWidth, DefaultTextColor, TextAlignment.Right);
             }
             return null;
         }
@@ -2334,13 +2334,13 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
         [NinjaScriptProperty]
         [Range(1, int.MaxValue)]
-        [Display(Name = "Buy / Sell Sliding Window (Seconds)", Description = "Sliding Window (in seconds) used for displaying trades.", Order = 0, GroupName = "Order Flow Parameters")]
+        [Display(Name = "Buy / Sell Sliding Window (Seconds)", Description = "Sliding Window (in seconds) used for displaying trades.", Order = 1, GroupName = "Order Flow Parameters")]
         public int TradeSlidingWindowSeconds
         { get; set; }
 
         [NinjaScriptProperty]
         [Range(1.5, double.MaxValue)]
-        [Display(Name = "Imbalance Factor", Description = "Imbalance Factor", Order = 1, GroupName = "Order Flow Parameters")]
+        [Display(Name = "Imbalance Factor", Description = "Imbalance Factor", Order = 2, GroupName = "Order Flow Parameters")]
         public double ImbalanceFactor
         { get; set; }
 
