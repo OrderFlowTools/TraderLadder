@@ -353,7 +353,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 if (DisplayPrice)
                     columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.SMALL, DefaultBackgroundColor, GetPrice));
                 if (DisplayPL)
-                    columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.MEDIUM, DefaultBackgroundColor, CalculatePL));
+                    columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.XSMALL, DefaultBackgroundColor, CalculatePL));
                 if (DisplayBidAskChange)
                     columns.Add(new ColumnDefinition(ColumnType.BID_CHANGE, ColumnSize.XSMALL, DefaultBackgroundColor, GenerateBidChangeText));
                 if (DisplayBidAsk || DisplayBidAskHistogram)
