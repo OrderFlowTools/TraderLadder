@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.4.1
+- Potential ICE execution (trades that exceed bid/ask sizes). These columns display cumulative executions (within sliding window timeframe) that exceed the corresponding bid and ask sizes.
+- Histograms for:
+  - Session buys/sells
+  - Sliding window buys/sells
+  - Highlighting to indicate strength
+- Configuration options organized into better grouping
+
 ## v0.4.0
 - Bid/Ask stacking/pulling is now displayed persistently instead of in a fleeting moment. _With extremely fast changes, only the last update will be visible._
 - The Notes column is now able to display notes from either:
