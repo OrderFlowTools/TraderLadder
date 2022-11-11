@@ -1,5 +1,5 @@
 # TraderLadder
-Current version: 0.4.0 ([release notes](https://github.com/OrderFlowTools/TraderLadder/blob/main/RELEASE_NOTES.md))
+Current version: 0.4.1 ([release notes](https://github.com/OrderFlowTools/TraderLadder/blob/main/RELEASE_NOTES.md))
 
 Free SuperDOM Ladder for Order Flow traders on Ninjatrader.
 
@@ -9,6 +9,7 @@ TraderLadder is a free order flow ladder for Ninjatrader v8. The SuperDOM column
 - Buys / Sells in a configurable sliding time window (defaults to 60 seconds) + Imbalance detection
 - Last prints or Largest prints at price in sliding window 
 - Session Buys / Sells + Imbalance detection
+- Potential ICE execution
 - Bid/Ask + Bid/Ask updates
 - Bid/Ask histogram 
 - Large resting Bid/Ask orders (highlighted)
