@@ -676,6 +676,10 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
                         int currentMaxIndex = barsUpdate.MaxIndex;
 
+                        double askPrice, bidPrice, tradePrice;
+                        long tradeSize, askSize, bidSize;
+                        DateTime time;
+
                         for (int i = lastMaxIndex + 1; i <= currentMaxIndex; i++)
                         {
                             if (barsUpdate.BarsSeries.GetIsFirstBarOfSession(i))
@@ -685,16 +689,30 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                                 orderFlow.ClearAll();
                             }
 
+                            tradePrice = barsUpdate.BarsSeries.GetClose(i);
+                            tradeSize = barsUpdate.BarsSeries.GetVolume(i);
+                            time = barsUpdate.BarsSeries.GetTime(i);
+
                             // Fetch our datapoints
                             if (SuperDom.MarketDepth.Asks.Count == 0 || SuperDom.MarketDepth.Bids.Count == 0)
                             {
-                                continue;
+                                askPrice = barsUpdate.BarsSeries.GetAsk(i);
+                                bidPrice = barsUpdate.BarsSeries.GetBid(i);
+                                askSize = orderFlow.GetAskSize(tradePrice);
+                                bidSize = orderFlow.GetBidSize(tradePrice);
+                                
                             }
-                            LadderRow askRow = SuperDom.MarketDepth.Asks[0];
-                            LadderRow bidRow = SuperDom.MarketDepth.Bids[0];
-                            double tradePrice = barsUpdate.BarsSeries.GetClose(i);
-                            long tradeSize = barsUpdate.BarsSeries.GetVolume(i);
-                            DateTime time = barsUpdate.BarsSeries.GetTime(i);
+                            else
+                            {
+                                LadderRow askRow = SuperDom.MarketDepth.Asks[0];
+                                LadderRow bidRow = SuperDom.MarketDepth.Bids[0];
+
+                                askPrice = askRow.Price;
+                                bidPrice = bidRow.Price;
+                                askSize = askRow.Volume;
+                                bidSize = bidRow.Volume;
+
+                            }
 
                             // Clear out data in buy / sell dictionaries based on a configurable
                             // sliding window of time (in seconds)
@@ -702,7 +720,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
                             // Classify current volume as buy/sell
                             // and add them to the buys/sells and totalBuys/totalSells collections
-                            orderFlow.ClassifyTrade(true, askRow.Price, askRow.Volume, bidRow.Price, bidRow.Volume, tradePrice, tradeSize, time);
+                            orderFlow.ClassifyTrade(true, askPrice, askSize, bidPrice, bidSize, tradePrice, tradeSize, time);
 
                             if (DisplayVolumeHistogram)
                             {
