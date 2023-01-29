@@ -211,7 +211,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         {
             if (State == State.SetDefaults)
             {
-                TraderLadderVersion = "v0.4.1";
+                TraderLadderVersion = "v0.4.2";
                 Name = "Free Trader Ladder (gemify) " + TraderLadderVersion;
                 Description = @"Traders Ladder - (c) Gem Immanuel";
                 DefaultWidth = 500;
