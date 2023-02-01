@@ -211,7 +211,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         {
             if (State == State.SetDefaults)
             {
-                TraderLadderVersion = "v0.4.1";
+                TraderLadderVersion = "v0.4.2";
                 Name = "Free Trader Ladder (gemify) " + TraderLadderVersion;
                 Description = @"Traders Ladder - (c) Gem Immanuel";
                 DefaultWidth = 500;
@@ -353,7 +353,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 if (DisplayPrice)
                     columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.SMALL, DefaultBackgroundColor, GetPrice));
                 if (DisplayPL)
-                    columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.MEDIUM, DefaultBackgroundColor, CalculatePL));
+                    columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.SMALL, DefaultBackgroundColor, CalculatePL));
                 if (DisplayBidAskChange)
                     columns.Add(new ColumnDefinition(ColumnType.BID_CHANGE, ColumnSize.XSMALL, DefaultBackgroundColor, GenerateBidChangeText));
                 if (DisplayBidAsk || DisplayBidAskHistogram)
@@ -387,7 +387,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                     columns.Add(new ColumnDefinition(ColumnType.ACCVAL, ColumnSize.LARGE, DefaultBackgroundColor, CalculateAccValue));
 
                 if (DisplayOrderFlowStrengthBar)
-                    columns.Add(new ColumnDefinition(ColumnType.OF_STRENGTH, ColumnSize.SMALL, DefaultBackgroundColor, CalculateOFStrength));
+                    columns.Add(new ColumnDefinition(ColumnType.OF_STRENGTH, ColumnSize.XSMALL, DefaultBackgroundColor, CalculateOFStrength));
 
                 #endregion
 
@@ -658,6 +658,24 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
         }
 
+        protected override void OnMarketData(MarketDataEventArgs e)
+        {
+            if (SuperDom.MarketDepth.Asks.Count == 0 || SuperDom.MarketDepth.Bids.Count == 0)
+            {
+                // Only interested in Bid/Ask updates
+                if (e.MarketDataType != MarketDataType.Ask && e.MarketDataType != MarketDataType.Bid) return;
+
+                if (e.MarketDataType == MarketDataType.Ask)
+                {
+                    orderFlow.AddOrUpdateAsk(e.Price, e.Volume, e.Time);
+                }
+				else if (e.MarketDataType == MarketDataType.Bid)
+                {
+                    orderFlow.AddOrUpdateBid(e.Price, e.Volume, e.Time);
+                }
+            }
+        }
+
         private void OnBarsUpdate(object sender, BarsUpdateEventArgs e)
         {
             try
@@ -676,6 +694,10 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
                         int currentMaxIndex = barsUpdate.MaxIndex;
 
+                        double askPrice, bidPrice, tradePrice;
+                        long tradeSize, askSize, bidSize;
+                        DateTime time;
+
                         for (int i = lastMaxIndex + 1; i <= currentMaxIndex; i++)
                         {
                             if (barsUpdate.BarsSeries.GetIsFirstBarOfSession(i))
@@ -685,16 +707,28 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                                 orderFlow.ClearAll();
                             }
 
+                            tradePrice = barsUpdate.BarsSeries.GetClose(i);
+                            tradeSize = barsUpdate.BarsSeries.GetVolume(i);
+                            time = barsUpdate.BarsSeries.GetTime(i);
+
                             // Fetch our datapoints
                             if (SuperDom.MarketDepth.Asks.Count == 0 || SuperDom.MarketDepth.Bids.Count == 0)
                             {
-                                continue;
+                                askPrice = barsUpdate.BarsSeries.GetAsk(i);
+                                bidPrice = barsUpdate.BarsSeries.GetBid(i);						
+                                askSize = orderFlow.GetAskSize(tradePrice);
+                                bidSize = orderFlow.GetBidSize(tradePrice);
                             }
-                            LadderRow askRow = SuperDom.MarketDepth.Asks[0];
-                            LadderRow bidRow = SuperDom.MarketDepth.Bids[0];
-                            double tradePrice = barsUpdate.BarsSeries.GetClose(i);
-                            long tradeSize = barsUpdate.BarsSeries.GetVolume(i);
-                            DateTime time = barsUpdate.BarsSeries.GetTime(i);
+                            else
+                            {
+                                LadderRow askRow = SuperDom.MarketDepth.Asks[0];
+                                LadderRow bidRow = SuperDom.MarketDepth.Bids[0];
+
+                                askPrice = askRow.Price;
+                                bidPrice = bidRow.Price;
+                                askSize = askRow.Volume;
+                                bidSize = bidRow.Volume;
+                            }
 
                             // Clear out data in buy / sell dictionaries based on a configurable
                             // sliding window of time (in seconds)
@@ -702,7 +736,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
                             // Classify current volume as buy/sell
                             // and add them to the buys/sells and totalBuys/totalSells collections
-                            orderFlow.ClassifyTrade(true, askRow.Price, askRow.Volume, bidRow.Price, bidRow.Volume, tradePrice, tradeSize, time);
+                            orderFlow.ClassifyTrade(true, askPrice, askSize, bidPrice, bidSize, tradePrice, tradeSize, time);
 
                             if (DisplayVolumeHistogram)
                             {
@@ -1744,7 +1778,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         {
             NinjaTrader.Gui.SuperDom.ColumnWrapper wrapper = (NinjaTrader.Gui.SuperDom.ColumnWrapper)sender;
 
-            Print("Mouse at price " + mouseAtPrice + " on " + (mouseInBid ? " BID " : (mouseInAsk ? " ASK " : "")));
+            // Print("Mouse at price " + mouseAtPrice + " on " + (mouseInBid ? " BID " : (mouseInAsk ? " ASK " : "")));
 
             Point p = Mouse.GetPosition(wrapper);
 
