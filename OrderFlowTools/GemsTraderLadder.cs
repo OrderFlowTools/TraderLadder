@@ -353,7 +353,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 if (DisplayPrice)
                     columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.SMALL, DefaultBackgroundColor, GetPrice));
                 if (DisplayPL)
-                    columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.XSMALL, DefaultBackgroundColor, CalculatePL));
+                    columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.SMALL, DefaultBackgroundColor, CalculatePL));
                 if (DisplayBidAskChange)
                     columns.Add(new ColumnDefinition(ColumnType.BID_CHANGE, ColumnSize.XSMALL, DefaultBackgroundColor, GenerateBidChangeText));
                 if (DisplayBidAsk || DisplayBidAskHistogram)
@@ -387,7 +387,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                     columns.Add(new ColumnDefinition(ColumnType.ACCVAL, ColumnSize.LARGE, DefaultBackgroundColor, CalculateAccValue));
 
                 if (DisplayOrderFlowStrengthBar)
-                    columns.Add(new ColumnDefinition(ColumnType.OF_STRENGTH, ColumnSize.SMALL, DefaultBackgroundColor, CalculateOFStrength));
+                    columns.Add(new ColumnDefinition(ColumnType.OF_STRENGTH, ColumnSize.XSMALL, DefaultBackgroundColor, CalculateOFStrength));
 
                 #endregion
 
@@ -658,6 +658,24 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
         }
 
+        protected override void OnMarketData(MarketDataEventArgs e)
+        {
+            if (SuperDom.MarketDepth.Asks.Count == 0 || SuperDom.MarketDepth.Bids.Count == 0)
+            {
+                // Only interested in Bid/Ask updates
+                if (e.MarketDataType != MarketDataType.Ask && e.MarketDataType != MarketDataType.Bid) return;
+
+                if (e.MarketDataType == MarketDataType.Ask)
+                {
+                    orderFlow.AddOrUpdateAsk(e.Price, e.Volume, e.Time);
+                }
+				else if (e.MarketDataType == MarketDataType.Bid)
+                {
+                    orderFlow.AddOrUpdateBid(e.Price, e.Volume, e.Time);
+                }
+            }
+        }
+
         private void OnBarsUpdate(object sender, BarsUpdateEventArgs e)
         {
             try
@@ -697,10 +715,9 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                             if (SuperDom.MarketDepth.Asks.Count == 0 || SuperDom.MarketDepth.Bids.Count == 0)
                             {
                                 askPrice = barsUpdate.BarsSeries.GetAsk(i);
-                                bidPrice = barsUpdate.BarsSeries.GetBid(i);
+                                bidPrice = barsUpdate.BarsSeries.GetBid(i);						
                                 askSize = orderFlow.GetAskSize(tradePrice);
                                 bidSize = orderFlow.GetBidSize(tradePrice);
-                                
                             }
                             else
                             {
@@ -711,7 +728,6 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                                 bidPrice = bidRow.Price;
                                 askSize = askRow.Volume;
                                 bidSize = bidRow.Volume;
-
                             }
 
                             // Clear out data in buy / sell dictionaries based on a configurable
@@ -1762,7 +1778,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         {
             NinjaTrader.Gui.SuperDom.ColumnWrapper wrapper = (NinjaTrader.Gui.SuperDom.ColumnWrapper)sender;
 
-            Print("Mouse at price " + mouseAtPrice + " on " + (mouseInBid ? " BID " : (mouseInAsk ? " ASK " : "")));
+            // Print("Mouse at price " + mouseAtPrice + " on " + (mouseInBid ? " BID " : (mouseInAsk ? " ASK " : "")));
 
             Point p = Mouse.GetPosition(wrapper);
 
