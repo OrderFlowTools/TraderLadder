@@ -26,11 +26,11 @@ namespace Gemify.OrderFlow
             TradeAggressor aggressor = ClassifyTrade(askPrice, bidPrice, tradePrice, tradeSize, time);
             if (aggressor == TradeAggressor.BUYER && tradeSize > askSize)
             {                
-                aggressor = TradeAggressor.BICE;
+                aggressor = TradeAggressor.SICE;
             }
             else if (aggressor == TradeAggressor.SELLER && tradeSize > bidSize)
             {
-                aggressor = TradeAggressor.SICE;
+                aggressor = TradeAggressor.BICE;
             }
             return aggressor;
         }

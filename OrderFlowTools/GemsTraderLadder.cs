@@ -358,8 +358,8 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                     columns.Add(new ColumnDefinition(ColumnType.BID_CHANGE, ColumnSize.XSMALL, DefaultBackgroundColor, GenerateBidChangeText));
                 if (DisplayBidAsk || DisplayBidAskHistogram)
                     columns.Add(new ColumnDefinition(ColumnType.BID, ColumnSize.SMALL, DefaultBackgroundColor, GenerateBidText));
-                if (DisplayIce) 
-                    columns.Add(new ColumnDefinition(ColumnType.SICE, ColumnSize.XSMALL, SIceColumnColor, GenerateSIceText));
+                if (DisplayIce)
+                    columns.Add(new ColumnDefinition(ColumnType.BICE, ColumnSize.XSMALL, BIceColumnColor, GenerateBIceText));
                 if (DisplaySlidingWindowBuysSells)
                     columns.Add(new ColumnDefinition(ColumnType.SELLS, ColumnSize.SMALL, SellColumnColor, GenerateSlidingWindowSellsText));                                    
                 if (DisplayLastSize)
@@ -369,8 +369,8 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 }
                 if (DisplaySlidingWindowBuysSells)                
                     columns.Add(new ColumnDefinition(ColumnType.BUYS, ColumnSize.SMALL, BuyColumnColor, GenerateSlidingWindowBuysText));
-                if (DisplayIce) 
-                    columns.Add(new ColumnDefinition(ColumnType.BICE, ColumnSize.XSMALL, BIceColumnColor, GenerateBIceText));                
+                if (DisplayIce)
+                    columns.Add(new ColumnDefinition(ColumnType.SICE, ColumnSize.XSMALL, SIceColumnColor, GenerateSIceText));
                 if (DisplayBidAsk || DisplayBidAskHistogram)
                     columns.Add(new ColumnDefinition(ColumnType.ASK, ColumnSize.SMALL, DefaultBackgroundColor, GenerateAskText));
                 if (DisplayBidAskChange)
