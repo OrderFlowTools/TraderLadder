@@ -98,6 +98,8 @@ namespace Gemify.OrderFlow
         private ConcurrentDictionary<double, BidAskPerc> BidsPerc;
         private ConcurrentDictionary<double, BidAskPerc> AsksPerc;
 
+        private ConcurrentDictionary<double, TimeStamped> SlidingVolume;
+
         private double imbalanceFactor;
         private long imbalanceInvalidateDistance;
         private const int minSlidingWindowTrades = 1;
@@ -109,6 +111,7 @@ namespace Gemify.OrderFlow
             public long largestSessionSize;
             public long bice;
             public long sice;
+            public long totalSlidingVolume;
         } 
         
         private Totals DataTotals;
@@ -145,6 +148,8 @@ namespace Gemify.OrderFlow
             BidChange = new ConcurrentDictionary<double, long>();
             BidsPerc = new ConcurrentDictionary<double, BidAskPerc>();
             AsksPerc = new ConcurrentDictionary<double, BidAskPerc>();
+
+            SlidingVolume = new ConcurrentDictionary<double, TimeStamped>();
 
             DataTotals = new Totals();
         }
@@ -185,6 +190,9 @@ namespace Gemify.OrderFlow
             LastSellPrint.Clear();
             LastBuyPrintMax.Clear();
             LastSellPrintMax.Clear();
+
+            SlidingVolume.Clear();
+            DataTotals.totalSlidingVolume = 0;
         }
 
         private void Print(string s)
@@ -333,7 +341,7 @@ namespace Gemify.OrderFlow
                 if (SessionBuys.TryGetValue(tradePrice, out sessBuy))
                 {
                     DataTotals.largestSessionSize = Math.Max(DataTotals.largestSessionSize, sessBuy);
-                }                
+                }
             }
             else if (aggressor == TradeAggressor.SELLER || aggressor == TradeAggressor.SICE)
             {
@@ -386,6 +394,12 @@ namespace Gemify.OrderFlow
                     DataTotals.largestSessionSize = Math.Max(DataTotals.largestSessionSize, sessSell);
                 }
 
+            }
+
+            if (updateSlidingWindow)
+            {
+                SlidingVolume.AddOrUpdate(tradePrice, new TimeStamped() { Size = tradeSize, Time = time }, (price, oldItem) => new TimeStamped() { Size = (oldItem.Size + tradeSize), Time = time });
+                DataTotals.totalSlidingVolume += tradeSize;
             }
         }
 
@@ -490,6 +504,35 @@ namespace Gemify.OrderFlow
             SessionSells.TryGetValue(price, out sellVolume);
             long totalVolume = buyVolume + sellVolume;
             return totalVolume;
+        }
+
+        internal long GetSlidingVolumeAtPrice(double price)
+        {
+            long slidingVolume = 0;
+            TimeStamped ts;
+            if (SlidingVolume.TryGetValue(price, out ts))
+            {
+                slidingVolume = ts.Size;
+            }
+            return slidingVolume;
+        }
+
+
+        internal void ClearVolumeOutsideSlidingWindow(DateTime time, int VolumeSlidingWindowSeconds)
+        {
+            foreach (double price in SlidingVolume.Keys)
+            {
+                TimeStamped item;
+                if (SlidingVolume.TryGetValue(price, out item))
+                {
+                    TimeSpan diff = time - item.Time;
+                    if (diff.TotalSeconds > VolumeSlidingWindowSeconds)
+                    {
+                        DataTotals.totalSlidingVolume -= item.Size;
+                        SlidingVolume.TryRemove(price, out item);
+                    }
+                }
+            }
         }
 
         /* 
@@ -955,6 +998,18 @@ namespace Gemify.OrderFlow
         internal long GetTotalSIce()
         {
             return DataTotals.sice;
+        }
+
+        internal long GetTotalSlidingVolume()
+        {
+            return DataTotals.totalSlidingVolume;
+        }
+
+        internal long GetLargestSlidingVolume()
+        {
+            IOrderedEnumerable<TimeStamped> volumes = SlidingVolume.Values.OrderByDescending(i => ((TimeStamped)i).Size);
+            TimeStamped item = volumes.FirstOrDefault();
+            return item == null ? 0 : item.Size;
         }
     }
 }
