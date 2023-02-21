@@ -318,11 +318,11 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 DisplayBuySellHistogram = true; 
                 DisplaySlidingWindowTotalsInSummaryRow = true;
 
-                DisplaySessionVolumeHistogram = true;
-                DisplaySessionVolumeText = true;
+                DisplaySessionVolumeHistogram = false;
+                DisplaySessionVolumeText = false;
 
-                DisplaySlidingVolumeHistogram = true;
-                DisplaySlidingVolumeText = true;
+                DisplaySlidingVolumeHistogram = false;
+                DisplaySlidingVolumeText = false;
 
                 DisplayBidAsk = false;
                 DisplayBidAskHistogram = false;
@@ -1717,29 +1717,6 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
             return null;
         }
 
-        private FormattedText GenerateLastBuyText(double renderWidth, double price)
-        {
-            long size = orderFlow.GetLastBuySize(price);
-
-            if (size > 0)
-            {
-                orderFlow.RemoveLastBuy(price);
-                return FormatText(size.ToString(), renderWidth, BuyTotalsTextColor, TextAlignment.Center);
-            }
-            return null;
-        }
-
-        private FormattedText GenerateLastSellText(double renderWidth, double price)
-        {
-            long size = orderFlow.GetLastSellSize(price);
-            if (size > 0)
-            {
-                orderFlow.RemoveLastSell(price);
-                return FormatText(size.ToString(), renderWidth, SellTotalsTextColor, TextAlignment.Center);
-            }
-            return null;
-        }
-
         private FormattedText GenerateLastBuyPrintText(double renderWidth, double price)
         {
             long size = orderFlow.GetLastBuyPrint(price);
@@ -1942,12 +1919,6 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         [NinjaScriptProperty]
         [Display(Name = "Sliding Volume", Description = "Display sliding volume text.", Order = 3, GroupName = "Price and Volume Columns")]
         public bool DisplaySlidingVolumeText
-        { get; set; }
-
-        [NinjaScriptProperty]
-        [Range(1, int.MaxValue)]
-        [Display(Name = "Sliding Volume Window (Seconds)", Description = "Window (in seconds) used for sliding volume.", Order = 4, GroupName = "Price and Volume Columns")]
-        public int SlidingVolumeWindowSeconds
         { get; set; }
 
 
@@ -2513,8 +2484,14 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
         { get; set; }
 
         [NinjaScriptProperty]
+        [Range(1, int.MaxValue)]
+        [Display(Name = "Sliding Volume Window (Seconds)", Description = "Window (in seconds) used for sliding volume.", Order = 2, GroupName = "Order Flow Parameters")]
+        public int SlidingVolumeWindowSeconds
+        { get; set; }
+
+        [NinjaScriptProperty]
         [Range(1.5, double.MaxValue)]
-        [Display(Name = "Imbalance Factor", Description = "Imbalance Factor", Order = 2, GroupName = "Order Flow Parameters")]
+        [Display(Name = "Imbalance Factor", Description = "Imbalance Factor", Order = 3, GroupName = "Order Flow Parameters")]
         public double ImbalanceFactor
         { get; set; }
 
