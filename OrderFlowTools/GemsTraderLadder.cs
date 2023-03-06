@@ -237,7 +237,8 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                 OrderFlowStrengthThreshold = 65;
                 OFSCalcMode = OFSCalculationMode.COMBINED;
 
-                SlidingVolumeWindowSeconds = 120; // 2 minutes
+                // Sliding volume default is same as sliding buy/sell window
+                SlidingVolumeWindowSeconds = TradeSlidingWindowSeconds; 
 
                 #region Color Defaults
 
@@ -373,6 +374,8 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                     columns.Add(new ColumnDefinition(ColumnType.PRICE, ColumnSize.SMALL, DefaultBackgroundColor, GetPrice));
                 if (DisplayPL)
                     columns.Add(new ColumnDefinition(ColumnType.PL, ColumnSize.SMALL, DefaultBackgroundColor, CalculatePL));
+                if (DisplayDelta)
+                    columns.Add(new ColumnDefinition(ColumnType.DELTA, ColumnSize.SMALL, DefaultBackgroundColor, GenerateDeltaText));
                 if (DisplayBidAskChange)
                     columns.Add(new ColumnDefinition(ColumnType.BID_CHANGE, ColumnSize.XSMALL, DefaultBackgroundColor, GenerateBidChangeText));
                 if (DisplayBidAsk || DisplayBidAskHistogram)
@@ -381,8 +384,6 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                     columns.Add(new ColumnDefinition(ColumnType.BICE, ColumnSize.XSMALL, BIceColumnColor, GenerateBIceText));
                 if (DisplaySlidingWindowBuysSells)
                     columns.Add(new ColumnDefinition(ColumnType.SELLS, ColumnSize.SMALL, SellColumnColor, GenerateSlidingWindowSellsText));
-                if (DisplayDelta)
-                    columns.Add(new ColumnDefinition(ColumnType.DELTA, ColumnSize.SMALL, DefaultBackgroundColor, GenerateDeltaText));
                 if (DisplaySlidingWindowBuysSells)                
                     columns.Add(new ColumnDefinition(ColumnType.BUYS, ColumnSize.SMALL, BuyColumnColor, GenerateSlidingWindowBuysText));
                 if (DisplayIce)
@@ -1080,7 +1081,7 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                             dc.DrawRectangle(SlidingVolumeHistogramColor, null, new Rect(xc, verticalOffset - 1, volumeWidth, cellRect.Height));
                         }
 
-                        if (!DisplaySessionVolumeText)
+                        if (!DisplaySlidingVolumeText)
                         {
                             colDef.Text = null;
                         }
@@ -1383,8 +1384,10 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
 
                     if (row.Price == SuperDom.LowerPrice)
                     {
+
                         Brush color = DefaultTextColor;
                         String text = String.Empty;
+                        TextAlignment textAlignment = TextAlignment.Right;
 
                         // Write summary at lowerprice row
                         if (colDef.ColumnType == ColumnType.DELTA)
@@ -1397,13 +1400,15 @@ namespace NinjaTrader.NinjaScript.SuperDomColumns
                                 color = buyTotal > sellTotal ? BuyTotalsTextColor : (sellTotal > buyTotal ? SellTotalsTextColor : DefaultTextColor);
                                 text = (buyTotal - sellTotal).ToString();
                             }
+
+                            textAlignment = TextAlignment.Center;
                         }
                         else if (colDef.ColumnType == ColumnType.SLIDING_VOLUME)
                         {
                             text = orderFlow.GetTotalSlidingVolume().ToString();
                         }
 
-                        FormattedText ftext = FormatText(text, cellWidth, color, TextAlignment.Right);
+                        FormattedText ftext = FormatText(text, cellWidth, color, textAlignment);
                         dc.DrawText(ftext, new Point(cellRect.Left + 5, verticalOffset + (SuperDom.ActualRowHeight - ftext.Height) / 2));
 
                     }
