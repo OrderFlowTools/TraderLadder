@@ -2,6 +2,7 @@
 // Copyright (C) 2021, Gem Immanuel (gemify@gmail.com)
 //
 #region Using declarations
+using Gemify.OrderFlow;
 using NinjaTrader.Cbi;
 using NinjaTrader.Data;
 using NinjaTrader.Gui.SuperDom;
@@ -10,16 +11,14 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml.Serialization;
-using System.Globalization;
-using Gemify.OrderFlow;
-using Trade = Gemify.OrderFlow.Trade;
 using Indicator = NinjaTrader.NinjaScript.Indicators.Indicator;
-using NinjaTrader.Gui.Tools;
-using NinjaTrader.Gui.OptionChain;
+using Trade = Gemify.OrderFlow.Trade;
+using LadderRow = NinjaTrader.Gui.SuperDom.LadderRow;
 
 #endregion
 

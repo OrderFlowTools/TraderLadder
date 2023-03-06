@@ -1,5 +1,4 @@
-﻿using NinjaTrader.Custom;
-using System;
+﻿using System;
 
 namespace Gemify.OrderFlow
 {
