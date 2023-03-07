@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace Gemify.OrderFlow
 {
@@ -26,11 +21,11 @@ namespace Gemify.OrderFlow
             TradeAggressor aggressor = ClassifyTrade(askPrice, bidPrice, tradePrice, tradeSize, time);
             if (aggressor == TradeAggressor.BUYER && tradeSize > askSize)
             {                
-                aggressor = TradeAggressor.BICE;
+                aggressor = TradeAggressor.SICE;
             }
             else if (aggressor == TradeAggressor.SELLER && tradeSize > bidSize)
             {
-                aggressor = TradeAggressor.SICE;
+                aggressor = TradeAggressor.BICE;
             }
             return aggressor;
         }

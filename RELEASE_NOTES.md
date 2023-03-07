@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.4.3
+
+New Delta column that displays buy/sell delta in the sliding window
+New Sliding Volume column that displays developing volume in the sliding window# Release Notes
+
 ## v0.4.2
 - Fixed the issue with the ladder not working with Level I feeds.
 
