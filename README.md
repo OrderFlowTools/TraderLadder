@@ -24,7 +24,7 @@ This software is provided for free, including the source code for it. At some po
 Please refer to the documentation here: https://github.com/OrderFlowTools/TraderLadder/wiki
 
 ## Screenshots
-![DarkScreenShot_1](https://github.com/OrderFlowTools/screenshots/blob/main/traderladder/v0.3.3/full.PNG)
+![DarkScreenShot_1](https://github.com/OrderFlowTools/screenshots/blob/main/traderladder/v0.4.3/ladder0.4.3.png)
 
 ![DarkScreenShot_1](https://github.com/OrderFlowTools/screenshots/blob/main/traderladder/v0.3.6/ladder-size-highlight.PNG)
 
