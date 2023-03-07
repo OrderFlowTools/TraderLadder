@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.4.3
+
+New Delta column that displays buy/sell delta in the sliding window
+New Sliding Volume column that displays developing volume in the sliding window# Release Notes
+
+## v0.4.2
+- Fixed the issue with the ladder not working with Level I feeds.
+
 ## v0.4.1
 - Potential ICE execution (trades that exceed bid/ask sizes). These columns display cumulative executions (within sliding window timeframe) that exceed the corresponding bid and ask sizes.
 - Histograms for:
